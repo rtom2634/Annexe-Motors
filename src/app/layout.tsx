@@ -5,10 +5,26 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import BackToTop from '../components/BackToTop';
 
-export const metadata: Metadata = {
-  title: 'Annexe Motors | Luxury Automotive Service',
-  description: 'Expert automobile maintenance and engineering solutions in Barari, Bhagalpur.',
-};
+export const metadata = {
+    title: 'Annexe Motors | Premier Multi-Brand Workshop',
+    description: 'Bhagalpur’s top-rated automotive workshop. From laser-guided wheel balancing to flawless denting and painting, we deliver dealership-level expertise.',
+    keywords: ['car repair', 'workshop', 'Bhagalpur', 'Annexe Motors', 'auto service', 'denting painting'],
+    openGraph: {
+      title: 'Annexe Motors | Premier Multi-Brand Workshop',
+      description: 'Bhagalpur’s top-rated automotive workshop delivering dealership-level expertise.',
+      url: 'https://annexemotors.in',
+      siteName: 'Annexe Motors',
+      images: [
+        {
+          url: '/logo.jpeg', 
+          width: 800,
+          height: 600,
+        },
+      ],
+      locale: 'en_IN',
+      type: 'website',
+    },
+  };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
