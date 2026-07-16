@@ -11,7 +11,7 @@ import {
   } from 'lucide-react';
 
 const supabaseUrl = 'https://nzgaknvrngpyksdkbmik.supabase.co';
-const supabaseAnonKey = 'sb_publishable_p4Y0JNvwc-eyarYTfGGWZA_ol608O7T'; // Ensure your full publishable key is pasted here
+const supabaseAnonKey = 'sb_publishable_p4Y0JNvwc-eyarYTfGGWZA_ol608O7T'; 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Navbar() {
@@ -35,7 +35,7 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Close menus when route changes
+  // Close menus when route changes or clicking outside
   useEffect(() => {
     setIsOpen(false);
     setDropdownOpen(false);
@@ -61,7 +61,7 @@ export default function Navbar() {
     { name: 'Home', href: '/' },
     { name: 'About', href: '/about' },
     { name: 'Services', href: '/services' },
-    { name: 'Book Appointment', href: '/booking' },
+    { name: 'Book', href: '/booking' }, // Shortened for better mobile fit
     { name: 'Contact', href: '/contact' },
   ];
 
@@ -71,7 +71,7 @@ export default function Navbar() {
     { name: 'Blogs', href: '/blogs', icon: <BookOpen size={14} /> },
     { name: 'Careers', href: '/careers', icon: <Briefcase size={14} /> },
     { name: 'Privacy Policy', href: '/privacy', icon: <Shield size={14} /> },
-    { name: 'Terms & Conditions', href: '/terms', icon: <FileText size={14} /> },
+    { name: 'Terms', href: '/terms', icon: <FileText size={14} /> },
   ];
 
   const isAdmin = session?.user?.email === ADMIN_EMAIL;
@@ -80,19 +80,19 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5 text-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 h-24 flex items-center justify-between">
         
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-4 z-50 relative">
+        {/* Responsive Logo */}
+        <Link href="/" className="flex items-center gap-2 lg:gap-4 z-50 relative shrink-0">
           <Image 
             src="/logo.jpeg" 
             alt="Annexe Motors" 
             width={130} 
             height={140} 
-            className="object-cover invert opacity-95 rounded-sm" 
+            className="object-cover invert opacity-95 rounded-sm w-12 h-12 lg:w-auto lg:h-auto" 
             priority 
           />
           <div className="flex flex-col justify-center">
-            <span className="text-[28px] font-bold uppercase tracking-tight leading-none">Annexe</span>
-            <span className="text-[42px] uppercase tracking-normal text-gray-500 font-medium leading-none mt-0.5">Motors</span>
+            <span className="text-xl lg:text-[28px] font-bold uppercase tracking-tight leading-none">Annexe</span>
+            <span className="text-[22px] lg:text-[42px] uppercase tracking-normal text-gray-500 font-medium leading-none mt-0.5">Motors</span>
           </div>
         </Link>
 
@@ -106,19 +106,27 @@ export default function Navbar() {
 
           {/* Desktop Dropdown Menu */}
           <div className="relative" ref={dropdownRef}>
-            <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-gray-300 hover:text-blue-500 transition-colors cursor-pointer">
+            <button 
+              onClick={() => setDropdownOpen(!dropdownOpen)} 
+              className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-gray-300 hover:text-blue-500 transition-colors cursor-pointer"
+            >
               More <ChevronDown size={14} className={`transition-transform duration-300 ${dropdownOpen ? 'rotate-180 text-blue-500' : ''}`} />
             </button>
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-4 w-56 bg-neutral-950 border border-white/10 rounded-sm shadow-2xl p-2">
-                {dropdownLinks.map((subLink) => (
-                  <Link key={subLink.href} href={subLink.href} className="flex items-center gap-3 px-4 py-3 rounded-sm text-xs font-semibold uppercase tracking-wider text-gray-400 hover:bg-white/5 hover:text-blue-400">
-                    <span className="text-gray-500 shrink-0">{subLink.icon}</span>
-                    {subLink.name}
-                  </Link>
-                ))}
-              </div>
-            )}
+            
+            {/* Desktop Dropdown Panel */}
+            <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-6 w-56 bg-neutral-950 border border-white/10 rounded-sm shadow-2xl p-2 transition-all duration-300 ${dropdownOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
+              {dropdownLinks.map((subLink) => (
+                <Link 
+                  key={subLink.href} 
+                  href={subLink.href} 
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-sm text-xs font-semibold uppercase tracking-wider text-gray-400 hover:bg-white/5 hover:text-blue-400"
+                >
+                  <span className="text-gray-500 shrink-0">{subLink.icon}</span>
+                  {subLink.name}
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Desktop Authentication Module */}
@@ -151,7 +159,7 @@ export default function Navbar() {
         {/* Mobile Hamburger Toggle Button */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="lg:hidden relative z-50 text-gray-300 hover:text-white p-2 transition-colors"
+          className="lg:hidden relative z-50 text-gray-300 hover:text-white p-2 transition-colors shrink-0"
           aria-label="Toggle Menu"
         >
           {isOpen ? <X size={28} /> : <Menu size={28} />}
@@ -160,16 +168,17 @@ export default function Navbar() {
 
       {/* Mobile Overlay Drawer */}
       <div 
-        className={`fixed inset-0 bg-neutral-950/95 backdrop-blur-xl z-40 flex flex-col pt-32 px-6 pb-8 transition-all duration-500 ease-in-out lg:hidden ${
+        className={`fixed inset-0 bg-neutral-950/95 backdrop-blur-xl z-40 flex flex-col pt-32 px-6 pb-8 transition-all duration-500 ease-in-out lg:hidden overflow-y-auto ${
           isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'
         }`}
       >
-        <div className="flex flex-col gap-6 overflow-y-auto pb-10">
+        <div className="flex flex-col gap-6 pb-10">
           {/* Main Mobile Links */}
           {mainLinks.map((link) => (
             <Link 
               key={link.href} 
-              href={link.href} 
+              href={link.href}
+              onClick={() => setIsOpen(false)} // Auto-close on click
               className="text-lg font-bold uppercase tracking-widest text-gray-200 hover:text-blue-500 transition-colors"
             >
               {link.name}
@@ -178,19 +187,37 @@ export default function Navbar() {
           
           <div className="h-px bg-white/10 w-full my-2" />
 
-          {/* More/Dropdown Mobile Links */}
-          <span className="text-xs font-bold uppercase tracking-widest text-gray-500">More Links</span>
-          <div className="grid grid-cols-1 gap-4 pl-4">
-            {dropdownLinks.map((subLink) => (
-              <Link 
-                key={subLink.href} 
-                href={subLink.href} 
-                className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider text-gray-400 hover:text-blue-400"
-              >
-                <span className="text-gray-500">{subLink.icon}</span>
-                {subLink.name}
-              </Link>
-            ))}
+          {/* Mobile Accordion Dropdown (The Fix) */}
+          <div className="flex flex-col">
+            <button 
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center justify-between text-lg font-bold uppercase tracking-widest text-gray-200 hover:text-blue-500 transition-colors w-full text-left"
+            >
+              More 
+              <ChevronDown size={20} className={`transition-transform duration-300 ${dropdownOpen ? 'rotate-180 text-blue-500' : ''}`} />
+            </button>
+            
+            {/* Expandable Panel */}
+            <div 
+              className={`grid grid-cols-1 gap-5 pl-4 overflow-hidden transition-all duration-300 ease-in-out ${
+                dropdownOpen ? 'max-h-96 opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'
+              }`}
+            >
+              {dropdownLinks.map((subLink) => (
+                <Link 
+                  key={subLink.href} 
+                  href={subLink.href} 
+                  onClick={() => {
+                    setIsOpen(false); // Auto-close drawer
+                    setDropdownOpen(false); // Reset dropdown state
+                  }}
+                  className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider text-gray-400 hover:text-blue-400"
+                >
+                  <span className="text-gray-500">{subLink.icon}</span>
+                  {subLink.name}
+                </Link>
+              ))}
+            </div>
           </div>
 
           <div className="h-px bg-white/10 w-full my-4" />
@@ -199,7 +226,7 @@ export default function Navbar() {
           <div className="mt-auto">
             {session ? (
               isAdmin ? (
-                <Link href="/admin" className="flex items-center justify-center gap-2 bg-blue-600/10 border border-blue-500/40 text-white text-sm font-bold uppercase tracking-widest w-full py-4 rounded-sm transition-all hover:bg-blue-600">
+                <Link href="/admin" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 bg-blue-600/10 border border-blue-500/40 text-white text-sm font-bold uppercase tracking-widest w-full py-4 rounded-sm transition-all hover:bg-blue-600">
                   <LayoutDashboard size={16} />
                   Admin Dashboard
                 </Link>
@@ -219,7 +246,7 @@ export default function Navbar() {
                 </div>
               )
             ) : (
-              <Link href="/admin" className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white text-sm font-bold uppercase tracking-widest w-full py-4 rounded-sm transition-all hover:bg-white/10">
+              <Link href="/admin" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white text-sm font-bold uppercase tracking-widest w-full py-4 rounded-sm transition-all hover:bg-white/10">
                 <User size={16} className="text-gray-400" />
                 Sign In
               </Link>
