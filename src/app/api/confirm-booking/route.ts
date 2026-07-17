@@ -130,7 +130,7 @@ export async function POST(req: Request) {
           template: {
             name: 'booking_confirmation', 
             language: {
-              code: 'en_US', 
+              code: 'en', 
             },
             components: [
               {
