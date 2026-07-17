@@ -113,8 +113,9 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 w-full">
           <div className="max-w-4xl space-y-8">
-            <div className="flex items-center gap-3 text-blue-500 text-xs font-bold uppercase tracking-[0.2em] animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <span className="w-12 h-[2px] bg-blue-500"></span>
+            {/* Tagline updated for high visibility and sharp scaling */}
+            <div className="flex items-center gap-4 text-blue-500 text-sm md:text-base font-bold uppercase tracking-[0.25em] animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <span className="w-16 h-[2px] bg-blue-500 shrink-0"></span>
               Bhagalpur's Premier Multi-Brand Workshop
             </div>
             

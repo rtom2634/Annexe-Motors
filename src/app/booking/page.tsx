@@ -42,6 +42,9 @@ export default function BookingPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [bookingId, setBookingId] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  
+  // Tracking multiple selected service IDs
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -62,15 +65,19 @@ export default function BookingPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Toggle selection array for multi-services
+  const handleServiceToggle = (id: string) => {
+    setSelectedServices((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
   // Custom phone change handler with real-time validation
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
     setFormData({ ...formData, phone: rawInput });
 
-    // Remove formatting characters to isolate numbers
     const cleanPhone = rawInput.replace(/[\s-()]/g, '');
-    
-    // Checks for optional country codes (+91, 91, or 0) followed by 10 digits starting with 6, 7, 8, or 9
     const indianPhoneRegex = /^(?:\+91|91|0)?[6-9]\d{9}$/;
 
     if (rawInput === '') {
@@ -85,23 +92,27 @@ export default function BookingPage() {
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
-  // Cleaned and Fixed Submission Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phoneError) return; // Prevent submission if phone is invalid
+    if (phoneError) return; 
     setIsSubmitting(true);
     
-    // Generate unique identifier
     const generatedId = 'AM-' + Math.floor(10000 + Math.random() * 90000);
+
+    // Map IDs to their display names and combine them into a single list string
+    const chosenServiceNames = serviceOptions
+      .filter((svc) => selectedServices.includes(svc.id))
+      .map((svc) => svc.name)
+      .join(', ');
     
     try {
-      // 1. Insert into Supabase Database (Happens exactly once)
+      // 1. Insert into Supabase Database
       const { error } = await supabase
         .from('bookings')
         .insert([
           {
             booking_id: generatedId,
-            service: formData.service,
+            service: chosenServiceNames, // Pushes readable list straight to your column
             date: formData.date,
             time: formData.time,
             make: formData.make,
@@ -117,7 +128,7 @@ export default function BookingPage() {
 
       if (error) throw error;
 
-      // 2. Trigger Gmail Notification API silently in the background
+      // 2. Trigger Notification API with combined service list string
       try {
         await fetch('/api/confirm-booking', {
           method: 'POST',
@@ -127,17 +138,17 @@ export default function BookingPage() {
             email: formData.email,
             phone: formData.phone,
             bookingId: generatedId,
-            service: formData.service,
+            service: chosenServiceNames,
             date: formData.date,
             time: formData.time
           })
         });
       } catch (apiErr) {
-        // Log background error but don't disrupt user's success experience
         console.error('Background notification dispatch failed:', apiErr);
       }
 
-      // 3. Complete Flow and Update UI
+      // 3. Complete Flow, store names inside local state for clean Success UI text rendering
+      setFormData(prev => ({ ...prev, service: chosenServiceNames }));
       setBookingId(generatedId);
       setIsSuccess(true);
     } catch (dbError: any) {
@@ -163,7 +174,7 @@ export default function BookingPage() {
           </div>
 
           <p className="text-gray-400 font-light text-sm leading-relaxed mb-8">
-            Thank you, {formData.name}. Your appointment for {formData.service.replace('-', ' ')} is confirmed for {formData.date} at {formData.time}. A confirmation receipt has been dispatched to {formData.email}.
+            Thank you, {formData.name}. Your appointment for <span className="text-blue-400 font-normal">{formData.service}</span> is confirmed for {formData.date} at {formData.time}. A confirmation receipt has been dispatched to {formData.email}.
           </p>
           <Link href="/">
             <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-sm text-xs font-bold uppercase tracking-widest transition-colors">
@@ -184,7 +195,7 @@ export default function BookingPage() {
           <span className="text-blue-500 text-xs font-bold uppercase tracking-[0.2em]">Priority Reservation</span>
           <h1 className="text-4xl md:text-5xl font-light tracking-tight mt-4 mb-4">Schedule Your Service.</h1>
           <p className="text-gray-400 font-light max-w-xl mx-auto leading-relaxed">
-            Select your required service, choose a convenient time, and drop off your vehicle. We'll handle the rest with precision.
+            Select all required services, choose a convenient time, and drop off your vehicle. We'll handle the rest with precision.
           </p>
         </div>
 
@@ -212,18 +223,26 @@ export default function BookingPage() {
               <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <section>
                   <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-3">
-                    <Settings2 className="text-blue-500" size={20} /> Select Required Service
+                    <Settings2 className="text-blue-500" size={20} /> Select Required Services (Select Multiple)
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 text-sm md:grid-cols-3 gap-3">
-                    {serviceOptions.map((svc) => (
-                      <div 
-                        key={svc.id}
-                        onClick={() => setFormData({...formData, service: svc.id})}
-                        className={`cursor-pointer p-4 border rounded-sm transition-all text-center ${formData.service === svc.id ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white'}`}
-                      >
-                        {svc.name}
-                      </div>
-                    ))}
+                    {serviceOptions.map((svc) => {
+                      const isSelected = selectedServices.includes(svc.id);
+                      return (
+                        <div 
+                          key={svc.id}
+                          onClick={() => handleServiceToggle(svc.id)}
+                          className={`cursor-pointer p-4 border rounded-sm transition-all text-center flex items-center justify-center gap-2 select-none ${
+                            isSelected 
+                              ? 'border-blue-500 bg-blue-500/10 text-white font-medium shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
+                              : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
+                          }`}
+                        >
+                          {isSelected && <CheckCircle2 size={14} className="text-blue-500 shrink-0 animate-in zoom-in duration-200" />}
+                          {svc.name}
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
 
@@ -412,7 +431,7 @@ export default function BookingPage() {
                 disabled={
                   isSubmitting || 
                   !!phoneError || 
-                  (step === 1 && (!formData.service || !formData.date || !formData.time))
+                  (step === 1 && (selectedServices.length === 0 || !formData.date || !formData.time))
                 }
                 className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-sm text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
               >

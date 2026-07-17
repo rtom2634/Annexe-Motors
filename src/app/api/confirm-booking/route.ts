@@ -7,8 +7,18 @@ export async function POST(req: Request) {
     // Destructure properties from frontend payload
     const { name, email, phone, bookingId, service, date, time } = body; 
 
-    // Format the service name nicely
-    const formattedService = service ? service.replace(/-/g, ' ').toUpperCase() : 'GENERAL SERVICE';
+    // Smart Multi-Service Formatting: 
+    // If it's a multi-service list containing commas, we keep its clean casing.
+    // If it's a legacy hyphenated single string (e.g., 'oil-change'), we format it cleanly.
+    const formattedService = service 
+      ? service.includes(',')
+        ? service // Keeps "Oil Change & Filters, Engine Repair" looking beautiful
+        : service.replace(/-/g, ' ').toUpperCase() 
+      : 'GENERAL SERVICE';
+
+    // Dynamically change labels if multiple services are present
+    const isMultiService = service && service.includes(',');
+    const serviceLabel = isMultiService ? 'Services Selected' : 'Service Type';
 
     // =========================================================
     // 1. EMAIL NOTIFICATION (NODEMAILER)
@@ -52,8 +62,8 @@ export async function POST(req: Request) {
                     
                     <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
                       <tr>
-                        <td style="padding: 10px 0; color: #64748b; width: 40%; border-bottom: 1px solid #f1f5f9;">Service Type</td>
-                        <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right; border-bottom: 1px solid #f1f5f9;">${formattedService}</td>
+                        <td style="padding: 10px 0; color: #64748b; width: 40%; border-bottom: 1px solid #f1f5f9; vertical-align: top;">${serviceLabel}</td>
+                        <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right; border-bottom: 1px solid #f1f5f9; line-height: 1.4;">${formattedService}</td>
                       </tr>
                       <tr>
                         <td style="padding: 10px 0; color: #64748b; width: 40%; border-bottom: 1px solid #f1f5f9;">Scheduled Date</td>
@@ -99,26 +109,22 @@ export async function POST(req: Request) {
 
     if (phone && whatsappToken && whatsappPhoneId) {
       try {
-        // Step A: Format phone number into exact E.164 standard required by Meta
-        // Strips out all non-digits: "+91 76314 77102" -> "917631477102"
         let formattedPhone = phone.replace(/\D/g, '');
         
-        // If it's a raw 10-digit number without a country code, prepend India's code (91)
         if (formattedPhone.length === 10) {
           formattedPhone = `91${formattedPhone}`;
         }
 
         const whatsappUrl = `https://graph.facebook.com/v20.0/${whatsappPhoneId}/messages`;
 
-        // Step B: Set up message payload
         const payload = {
           messaging_product: 'whatsapp',
           to: formattedPhone,
           type: 'template',
           template: {
-            name: 'booking_confirmation', // ⚠️ Match this to your APPROVED Meta template name
+            name: 'booking_confirmation', // Matches your approved / pending Meta template name
             language: {
-              code: 'en_US', // Match template language (e.g., 'en' or 'en_US')
+              code: 'en_US', 
             },
             components: [
               {
@@ -126,7 +132,7 @@ export async function POST(req: Request) {
                 parameters: [
                   { type: 'text', text: name },             // Maps to {{1}} (Customer Name)
                   { type: 'text', text: bookingId },        // Maps to {{2}} (Booking ID)
-                  { type: 'text', text: formattedService }, // Maps to {{3}} (Service Name)
+                  { type: 'text', text: formattedService }, // Maps to {{3}} (Multi-Service List!)
                   { type: 'text', text: `${date} @ ${time}` } // Maps to {{4}} (Date & Time)
                 ],
               },
@@ -134,7 +140,6 @@ export async function POST(req: Request) {
           },
         };
 
-        // Step C: POST to Meta
         const whatsappResponse = await fetch(whatsappUrl, {
           method: 'POST',
           headers: {
