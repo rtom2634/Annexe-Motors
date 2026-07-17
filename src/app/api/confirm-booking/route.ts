@@ -107,10 +107,16 @@ export async function POST(req: Request) {
     const whatsappToken = process.env.WHATSAPP_TOKEN;
     const whatsappPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
+    // 🔍 DEBUG LOG 1: Check if Vercel can see your keys
+    console.log("🔍 WHATSAPP DIAGNOSTIC:", {
+      receivedPhone: !!phone,
+      hasTokenInVercel: !!whatsappToken,
+      hasPhoneIdInVercel: !!whatsappPhoneId,
+    });
+
     if (phone && whatsappToken && whatsappPhoneId) {
       try {
         let formattedPhone = phone.replace(/\D/g, '');
-        
         if (formattedPhone.length === 10) {
           formattedPhone = `91${formattedPhone}`;
         }
@@ -122,7 +128,7 @@ export async function POST(req: Request) {
           to: formattedPhone,
           type: 'template',
           template: {
-            name: 'booking_confirmation', // Matches your approved / pending Meta template name
+            name: 'booking_confirmation', 
             language: {
               code: 'en_US', 
             },
@@ -130,10 +136,10 @@ export async function POST(req: Request) {
               {
                 type: 'body',
                 parameters: [
-                  { type: 'text', text: name },             // Maps to {{1}} (Customer Name)
-                  { type: 'text', text: bookingId },        // Maps to {{2}} (Booking ID)
-                  { type: 'text', text: formattedService }, // Maps to {{3}} (Multi-Service List!)
-                  { type: 'text', text: `${date} @ ${time}` } // Maps to {{4}} (Date & Time)
+                  { type: 'text', text: name },             
+                  { type: 'text', text: bookingId },        
+                  { type: 'text', text: formattedService }, 
+                  { type: 'text', text: `${date} @ ${time}` } 
                 ],
               },
             ],
@@ -151,12 +157,18 @@ export async function POST(req: Request) {
 
         whatsappData = await whatsappResponse.json();
 
+        // 🔍 DEBUG LOG 2: Always print Meta's response payload, even if it's a success
+        console.log("📬 META RAW RESPONSE:", JSON.stringify(whatsappData));
+
         if (!whatsappResponse.ok) {
-          console.error('Meta WhatsApp API Error Payload:', whatsappData);
+          console.error('❌ Meta WhatsApp API Error Payload:', whatsappData);
         }
       } catch (wsErr) {
-        console.error('WhatsApp dispatch failed (Silently continued):', wsErr);
+        console.error('💥 WhatsApp dispatch failed directly:', wsErr);
       }
+    } else {
+      // 🔍 DEBUG LOG 3: Warn if the block was skipped entirely
+      console.log("⚠️ WhatsApp was completely skipped because tokens or phone numbers are missing.");
     }
 
     return NextResponse.json({ 
